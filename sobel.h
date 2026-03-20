@@ -16,6 +16,6 @@ extern int Ky[3][3];
 // Function declarations - TODO
 void seqSobel();
 int calculateGxy(int centeredX, int centeredY, int K[3][3]);
-void populateZero(int array[], int length);
+void populateZero(unsigned char array[], int length);
 void considerThreshold(unsigned char **image);
 void free2Darray(unsigned char **arrayName);

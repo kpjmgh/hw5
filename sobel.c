@@ -54,7 +54,7 @@ int calculateGxy(int centeredX, int centeredY, int K[3][3]){
     return g;
 }
 
-void populateZero(int array[], int length){
+void populateZero(unsigned char array[], int length){
     for(int i = 0; i<length; i++){
         array[i] = length;
     }

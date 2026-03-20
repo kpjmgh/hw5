@@ -48,10 +48,11 @@ int main(int argc, char *argv[]) {
     sscanf(argv[2], "%d", &num_threads);
     //threshold = (unsigned char)argv[3];
     //threshold = (int)argv[3];
-    threshold = (int)(intptr_t)argv[3];
+    //threshold = (int)(intptr_t)argv[3];
+    threshold = atoi(argv[3]);
 
     // TODO - Read image file into array a 1D array (see assignment write-up)
-    unsigned char *data = stbi_load(filename, &width, &height, NULL, 1); //taken from assignment
+    unsigned char *data = stbi_load(filename, &width, &height, NULL, 1); //taken from assignment. Valgrind seems to have an issue here
 
     printf("Loaded %s. Height=%d, Width=%d\n", filename, height, width);
 
@@ -65,7 +66,7 @@ int main(int argc, char *argv[]) {
     output_image = malloc(sizeof(unsigned char*) * height);//malloc a size 'height' array of pointers (these are the rows)
     for (int i = 0; i < height; i++){//iterate through each row and malloc an array of size 'width'
         //output_image[i] = malloc(sizeof(int) * width); 
-        output_image[i] = calloc(width, sizeof(int)); //I was having issues here and using 'calloc' instead of 'malloc' seemed to fix them
+        output_image[i] = calloc(width, sizeof(unsigned char)); //I was having issues here and using 'calloc' instead of 'malloc' seemed to fix them
     }//now we have a 2D array, acessible via output_image[x][y]
 
 
@@ -98,12 +99,12 @@ int main(int argc, char *argv[]) {
             array1D[i * width + j] = output_image[i][j];
         }
     }
-    char *outfilename = "outfile";
+    char *outfilename = "outfile.jpg";
     stbi_write_jpg(outfilename, width, height, 1, array1D, 80);
 
     // TODO - Free allocated memory
     free(array1D);
-    free2Darray(input_image);
+    free2Darray(input_image); //Valgrind seems to have an issue here.
     free2Darray(output_image);
 
 
