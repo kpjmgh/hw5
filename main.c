@@ -16,7 +16,7 @@ int Kx[3][3] = {
 };
 
 int Ky[3][3] = {
-    {-1, -2, -1},
+    {-1, -2, -1}, 
     { 0,  0,  0},
     { 1,  2,  1}
 };
@@ -29,7 +29,7 @@ int width, height;
 int num_threads;
 const int sequential = 0;//added by me 
 const int parallel = 1;//added by me
-int mode = sequential; //added by me
+int mode = parallel; //added by me
 //int size;//added by me
 
 /**
@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
 
     // TODO - Read image file into array a 1D array (see assignment write-up)
     unsigned char *data = stbi_load(filename, &width, &height, NULL, 1); //taken from assignment. Valgrind seems to have an issue here
+    
 
     printf("Loaded %s. Height=%d, Width=%d\n", filename, height, width);
 
@@ -61,6 +62,7 @@ int main(int argc, char *argv[]) {
     for(int i = 0; i < height; i++){
         input_image[i] = &data[i * width]; //assign each row the proper pixel offset
     }
+    
 
     //malloc output image array
     output_image = malloc(sizeof(unsigned char*) * height);//malloc a size 'height' array of pointers (these are the rows)
@@ -68,8 +70,7 @@ int main(int argc, char *argv[]) {
         //output_image[i] = malloc(sizeof(int) * width); 
         output_image[i] = calloc(width, sizeof(unsigned char)); //I was having issues here and using 'calloc' instead of 'malloc' seemed to fix them
     }//now we have a 2D array, acessible via output_image[x][y]
-
-
+    
 
     // Start clocking! //tracks how long it takes
     double startTime, endTime;
@@ -77,20 +78,62 @@ int main(int argc, char *argv[]) {
 
 
 
-    // TODO - Prepare and create threads
-    if(mode == parallel){
+    if(mode == sequential){
         seqSobel();
     }
     
-    if(mode == sequential){
-        //detect edges
+    // TODO - Prepare and create threads
+    if(mode == parallel){
+        //printf("Entering parallel\n");//testing
+        populateZero(output_image[0], width);    
+        
+        int average = height / num_threads;
+        
+        pthread_t workerThreads[num_threads]; //create worker threads
+        int tid[num_threads]; //creates an empty array to be filled with thread ids for each thread
+        
+
+        for (int i = 0; i < num_threads; i++) { //for every thread:
+            struct arguments *threadArgs = (struct arguments*)malloc(sizeof(struct arguments));
+            //threadArgs = malloc(3 * sizeof(int));//this line is causing issues
+            //threadArgs = calloc(3, sizeof(*threadArgs));
+
+            threadArgs -> start = i * average; 
+            threadArgs -> end = threadArgs -> start + average; 
+
+            if(threadArgs -> start == 0){
+                threadArgs -> start = 1;
+            }
+            if(i == num_threads-1){
+                threadArgs -> end = height-2;//minus 2 because -1 should cause the final index number, and we need to stop one before it
+            }
+
+            tid[i] = i; //adds each thread id to the tid array 
+            threadArgs -> tid = tid[i]; //there's an issue with this line somehow
+            //threadArgs -> tid = i;
+            pthread_create(&workerThreads[i], NULL, parSobelThread, (void*) threadArgs); //get the thread to actually do the task at hand//there seems to be a problem with what threadArgs is actually passing
+            pthread_join(workerThreads[i], NULL);
+            free(threadArgs);
+        }
+        
+        /*
+        // TODO - Wait for threads to finish
+        //join threads
+        for(int i = 0; i<num_threads; i++){
+            pthread_join(workerThreads[i], NULL);
+        }
+        */
+        populateZero(output_image[height-1], width);
+
     }
 
-    // TODO - Wait for threads to finish
     
     // End clocking!
     endTime = rtclock();
     printf("Time taken (thread count = %d): %.6f sec\n", num_threads, (endTime - startTime));
+
+    //printf("output_image: ");//testing
+    //print2Darray(output_image);//testing
 
     // TODO - Save the file!
     unsigned char *array1D = malloc(width * height * sizeof(unsigned char));
@@ -99,14 +142,15 @@ int main(int argc, char *argv[]) {
             array1D[i * width + j] = output_image[i][j];
         }
     }
+
     char *outfilename = "outfile.jpg";
     stbi_write_jpg(outfilename, width, height, 1, array1D, 80);
 
     // TODO - Free allocated memory
     free(array1D);
-    free2Darray(input_image); //Valgrind seems to have an issue here.
+    free(input_image); //Valgrind seems to have an issue here.
     free2Darray(output_image);
-
+    free(data);
 
     return 0;
 }

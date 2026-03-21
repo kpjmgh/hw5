@@ -12,10 +12,18 @@ extern int Ky[3][3];
 
 
 // Thread function argument - TODO
+struct arguments{
+    int start;
+    int end;
+    int tid;
+};
 
 // Function declarations - TODO
 void seqSobel();
+void parSobelThread(void* threadArgs);
 int calculateGxy(int centeredX, int centeredY, int K[3][3]);
 void populateZero(unsigned char array[], int length);
 void considerThreshold(unsigned char **image);
 void free2Darray(unsigned char **arrayName);
+void printArray();
+void print2Darray();
